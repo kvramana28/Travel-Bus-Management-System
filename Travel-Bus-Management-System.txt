@@ -1,0 +1,187 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define RUNNING 1
+#define NOT_RUNNING 0
+#define UNDER_REPAIR 2
+#define IN_OTHER_DEPOT 3
+#define TOTAL_SEATS 40
+
+struct Bus {
+    int busNumber;
+    char route[50];
+    int status;
+    int seatsBooked;
+    int seatsAvailable;
+    char startTime[10];
+    char reachTime[10];
+    struct Bus* next;
+};
+
+struct Bus* createBus(int busNumber, char* route, int status, char* startTime, char* reachTime) {
+    struct Bus* newBus = (struct Bus*)malloc(sizeof(struct Bus));
+    newBus->busNumber = busNumber;
+    strcpy(newBus->route, route);
+    newBus->status = status;
+    newBus->seatsBooked = 0;
+    newBus->seatsAvailable = TOTAL_SEATS;
+    strcpy(newBus->startTime, startTime);
+    strcpy(newBus->reachTime, reachTime);
+    newBus->next = NULL;
+    return newBus;
+}
+
+void addBus(struct Bus** head, int busNumber, char* route, int status, char* startTime, char* reachTime) {
+    struct Bus* newBus = createBus(busNumber, route, status, startTime, reachTime);
+    if (*head == NULL) {
+        *head = newBus;
+    } else {
+        struct Bus* temp = *head;
+        while (temp->next != NULL) {
+            temp = temp->next;
+        }
+        temp->next = newBus;
+    }
+}
+
+int countBuses(struct Bus* head, int status) {
+    int count = 0;
+    struct Bus* temp = head;
+    while (temp != NULL) {
+        if (temp->status == status) {
+            count++;
+        }
+        temp = temp->next;
+    }
+    return count;
+}
+
+void viewBusesOnRoute(struct Bus* head, char* route) {
+    struct Bus* temp = head;
+    int found = 0;
+    while (temp != NULL) {
+        if (strcmp(temp->route, route) == 0 && temp->status == RUNNING) {
+            printf("Bus Number: %d\n", temp->busNumber);
+            printf("Route: %s\n", temp->route);
+            printf("Start Time: %s\n", temp->startTime);
+            printf("Reach Time: %s\n", temp->reachTime);
+            printf("Seats Available: %d\n", temp->seatsAvailable);
+            printf("----------------------------\n");
+            found = 1;
+        }
+        temp = temp->next;
+    }
+    if (!found) {
+        printf("No buses are running on route %s.\n", route);
+    }
+}
+
+void bookSeats(struct Bus* head, int busNumber, int seatsToBook) {
+    struct Bus* temp = head;
+    while (temp != NULL) {
+        if (temp->busNumber == busNumber && temp->status == RUNNING) {
+            if (seatsToBook <= temp->seatsAvailable) {
+                temp->seatsBooked += seatsToBook;
+                temp->seatsAvailable -= seatsToBook;
+                printf("Successfully booked %d seats on Bus Number %d\n", seatsToBook, busNumber);
+                return;
+            } else {
+                printf("Not enough seats available. Only %d seats are available.\n", temp->seatsAvailable);
+                return;
+            }
+        }
+        temp = temp->next;
+    }
+    printf("Bus Number %d is either not running or doesn't exist.\n", busNumber);
+}
+
+void adminOperations(struct Bus* head) {
+    printf("Admin Operations:\n");
+
+    int running = countBuses(head, RUNNING);
+    int notRunning = countBuses(head, NOT_RUNNING);
+    int underRepair = countBuses(head, UNDER_REPAIR);
+    int inOtherDepot = countBuses(head, IN_OTHER_DEPOT);
+
+    int total = running + notRunning + underRepair + inOtherDepot;
+
+    printf("Total number of buses running: %d\n", running);
+    printf("Total number of buses not running: %d\n", notRunning);
+    printf("Total number of buses under repair: %d\n", underRepair);
+    printf("Total number of buses in other depots: %d\n", inOtherDepot);
+    printf("Total number of buses in depot: %d\n", total);
+    printf("Total number of buses: 50\n");
+}
+
+int main() {
+    struct Bus* busList = NULL;
+    int choice;
+
+    addBus(&busList, 101, "Hyderabad to Warangal", RUNNING, "08:00", "10:00");
+    addBus(&busList, 102, "Hyderabad to Hanumakonda", NOT_RUNNING, "09:00", "11:00");
+    addBus(&busList, 103, "Hyderabad to Warangal", RUNNING, "10:00", "12:00");
+    addBus(&busList, 104, "Karimnagar to Hyderabad", RUNNING, "07:00", "09:00");
+    addBus(&busList, 105, "Karimnagar to Warangal", UNDER_REPAIR, "11:00", "13:00");
+    addBus(&busList, 106, "Mulugu to Hyderabad", IN_OTHER_DEPOT, "06:30", "08:30");
+    addBus(&busList, 107, "Hyderabad to Hanumakonda", RUNNING, "12:00", "14:00");
+    addBus(&busList, 108, "Hyderabad to Warangal", RUNNING, "14:00", "16:00");
+    addBus(&busList, 109, "Karimnagar to Warangal", RUNNING, "05:30", "07:30");
+    addBus(&busList, 110, "Karimnagar to Hyderabad", RUNNING, "09:00", "11:00");
+
+    while (1) {
+        printf("\n Welcome To Travel Bus Management System\n");
+        printf("1. Admin\n");
+        printf("2. Passenger\n");
+        printf("3. Exit\n");
+        printf("Choose an option: ");
+        scanf("%d", &choice);
+        getchar();
+
+        switch (choice) {
+            case 1: {
+                char username[20], password[20];
+                printf("Enter username: ");
+                fgets(username, sizeof(username), stdin);
+                username[strcspn(username, "\n")] = 0;
+
+                printf("Enter password: ");
+                fgets(password, sizeof(password), stdin);
+                password[strcspn(password, "\n")] = 0;
+
+                if (strcmp(username, "admin") == 0 && strcmp(password, "admin123") == 0) {
+                    adminOperations(busList);
+                } else {
+                    printf("Invalid login credentials.\n");
+                }
+                break;
+            }
+            case 2: {
+                char route[50];
+                printf("Enter route to check for running buses: ");
+                fgets(route, sizeof(route), stdin);
+                route[strcspn(route, "\n")] = 0;
+
+                printf("Buses running on route %s:\n", route);
+                viewBusesOnRoute(busList, route);
+
+                int busNumber, seatsToBook;
+                printf("Enter Bus Number to book seats: ");
+                scanf("%d", &busNumber);
+                printf("Enter number of seats to book: ");
+                scanf("%d", &seatsToBook);
+
+                bookSeats(busList, busNumber, seatsToBook);
+                break;
+            }
+            case 3:
+                printf("Exiting...\n");
+                exit(0);
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+
+    return 0;
+}
